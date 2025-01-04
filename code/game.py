@@ -15,7 +15,7 @@ class Player(pygame.sprite.Sprite):
         # Cooldown for laser-shooting
         self.can_shoot = True
         self.laser_shoot_time = 0
-        self.cooldown_duration = 400  # 400ms between lasers
+        self.COOLDOWN_DURATION = 400  # 400ms between lasers
     
 
     def laser_timer(self):
@@ -25,7 +25,7 @@ class Player(pygame.sprite.Sprite):
             # amount of time since the start of game
             current_time = pygame.time.get_ticks()
 
-            if current_time - self.laser_shoot_time >= self.cooldown_duration:
+            if current_time - self.laser_shoot_time >= self.COOLDOWN_DURATION:
                 self.can_shoot = True
 
 
@@ -45,12 +45,17 @@ class Player(pygame.sprite.Sprite):
 
         recent_keys = pygame.key.get_just_pressed()
         if recent_keys[pygame.K_SPACE] and self.can_shoot:
-            print('laser boom')
+            
+            # Create Laser sprite
+            Laser(laser_surface, self.rect.midtop, all_sprites)
+
 
             self.can_shoot = False
 
+            # Capture time that the player pressed space (shoot laser)
             self.laser_shoot_time = pygame.time.get_ticks()
 
+        # Run the cooldown timer
         self.laser_timer()
 
 
@@ -63,6 +68,18 @@ class Star(pygame.sprite.Sprite):
 
         # Randomize locations of the Star objects
         self.rect = self.image.get_frect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
+
+
+class Laser(pygame.sprite.Sprite):
+    def __init__(self, surface, position, groups):
+        super().__init__(groups)
+        self.image = surface
+        self.rect = self.image.get_frect(midbottom = position)
+
+
+    def update(self, dt):
+        self.rect.centery -= 400 * dt
+
 
 
 ################################# GENERAL SETUP #################################
@@ -95,6 +112,9 @@ for _ in range(20):
 
 # Create Player (spaceship) and attach it to the all_sprites group
 player = Player(all_sprites)
+
+laser_surface = pygame.image.load(join('images','laser.png')).convert_alpha()
+
 
 
 # Meteor spawn event (spawns every 500ms)
