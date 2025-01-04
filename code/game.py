@@ -10,7 +10,7 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load(join('images', 'player.png')).convert_alpha()
         self.rect = self.image.get_frect(center=(WINDOW_WIDTH/2, WINDOW_HEIGHT/2))
         self.direction = pygame.Vector2()  # create (0,0) vector
-        self.speed = 300
+        self.speed = 500
     
 
     def update(self, dt):
@@ -59,11 +59,18 @@ pygame.display.set_caption('SpaceShooties')
 
 clock = pygame.time.Clock()
 
+# Create group to hold all sprites
 all_sprites = pygame.sprite.Group()
 
-# Create Player (spaceship)
-player = Player(all_sprites)
+# Add Stars randomly to display_surface
+star_surface = pygame.image.load(join('images','star.png')).convert_alpha()
 
+# Add 20 stars with random coordinates to the display_surface
+for _ in range(20):
+    Star(all_sprites, star_surface)
+
+# Create Player (spaceship) and attach it to the all_sprites group
+player = Player(all_sprites)
 
 ################################# MAIN GAME LOOP #################################
 
