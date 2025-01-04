@@ -94,7 +94,7 @@ class Meteor(pygame.sprite.Sprite):
         self.LIFETIME = 3000
 
         self.rotation = 0
-        self.rotation_speed = randint(20, 60)
+        self.rotation_speed = randint(40, 80)
         
 
     def update(self, dt):
@@ -103,10 +103,14 @@ class Meteor(pygame.sprite.Sprite):
         # rotate meteors
         self.rotation += self.rotation_speed * dt
         self.image = pygame.transform.rotate(self.original_image, self.rotation)
+        self.rect = self.image.get_frect(center = self.rect.center)
 
         # Destroy meteor sprites after 3s
         if pygame.time.get_ticks() - self.spawn_time >= self.LIFETIME:
             self.kill()
+
+
+
 
 def display_score():
     current_time = pygame.time.get_ticks() // 100
