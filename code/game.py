@@ -11,7 +11,23 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(center=(WINDOW_WIDTH/2, WINDOW_HEIGHT/2))
         self.direction = pygame.Vector2()  # create (0,0) vector
         self.speed = 500
+
+        # Cooldown for laser-shooting
+        self.can_shoot = True
+        self.laser_shoot_time = 0
+        self.cooldown_duration = 400  # 400ms between lasers
     
+
+    def laser_timer(self):
+
+        # If the laser is already pressed, we start the cooldown timer
+        if not self.can_shoot:
+            # amount of time since the start of game
+            current_time = pygame.time.get_ticks()
+
+            if current_time - self.laser_shoot_time >= self.cooldown_duration:
+                self.can_shoot = True
+
 
     def update(self, dt):
         # print('hi')
@@ -28,8 +44,16 @@ class Player(pygame.sprite.Sprite):
         self.rect.center += self.direction * self.speed * dt
 
         recent_keys = pygame.key.get_just_pressed()
-        if recent_keys[pygame.K_SPACE]:
+        if recent_keys[pygame.K_SPACE] and self.can_shoot:
             print('laser boom')
+
+            self.can_shoot = False
+
+            self.laser_shoot_time = pygame.time.get_ticks()
+
+        self.laser_timer()
+
+
 
 
 class Star(pygame.sprite.Sprite):
