@@ -72,6 +72,13 @@ for _ in range(20):
 # Create Player (spaceship) and attach it to the all_sprites group
 player = Player(all_sprites)
 
+
+# Meteor spawn event (spawns every 500ms)
+meteor_event = pygame.event.custom_type()
+pygame.time.set_timer(meteor_event, 500)
+
+
+
 ################################# MAIN GAME LOOP #################################
 
 while is_game_running:
@@ -81,6 +88,9 @@ while is_game_running:
         if event.type == pygame.QUIT:
             running = False
             sys.exit()
+
+        if event.type == meteor_event:
+            print('meteor spawned')
 
 
     # Update sprites
