@@ -47,7 +47,7 @@ class Player(pygame.sprite.Sprite):
         if recent_keys[pygame.K_SPACE] and self.can_shoot:
             
             # Create Laser sprite
-            Laser(laser_surface, self.rect.midtop, all_sprites)
+            Laser(laser_surface, self.rect.midtop, (all_sprites, laser_sprites))
 
 
             self.can_shoot = False
@@ -58,9 +58,6 @@ class Player(pygame.sprite.Sprite):
         # Run the cooldown timer
         self.laser_timer()
 
-
-
-
 class Star(pygame.sprite.Sprite):
     def __init__(self, groups, surf):
         super().__init__(groups)
@@ -68,7 +65,6 @@ class Star(pygame.sprite.Sprite):
 
         # Randomize locations of the Star objects
         self.rect = self.image.get_frect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
-
 
 class Laser(pygame.sprite.Sprite):
     def __init__(self, surface, position, groups):
@@ -105,6 +101,21 @@ class Meteor(pygame.sprite.Sprite):
             self.kill()
 
 
+
+def collisions():
+    # global is_game_running
+    # Check for collisions between player and meteor
+    if pygame.sprite.spritecollide(player, meteor_sprites, True):
+        # is_game_running = False
+        print('meteor collided with player')
+
+
+    # Check for collisions between laser sprites and meteors
+    for laser in laser_sprites:
+        if (pygame.sprite.spritecollide(laser, meteor_sprites, dokill=True)):
+            laser.kill()
+
+
 ################################# GENERAL SETUP #################################
 
 # Initialize pygame
@@ -125,6 +136,12 @@ clock = pygame.time.Clock()
 
 # Create group to hold all sprites
 all_sprites = pygame.sprite.Group()
+
+# Meteor sprite group
+meteor_sprites = pygame.sprite.Group()
+
+# Laser sprites
+laser_sprites = pygame.sprite.Group()
 
 # Add Stars randomly to display_surface
 star_surface = pygame.image.load(join('images','star.png')).convert_alpha()
@@ -161,17 +178,25 @@ while is_game_running:
         if event.type == meteor_event:
             x, y = randint(0, WINDOW_WIDTH), randint(-200, -100)
             # print(f"Spawning meteor at: x={x}, y={y}")
-            Meteor(meteor_surface, (x, y), all_sprites)
+            Meteor(meteor_surface, (x, y), (all_sprites, meteor_sprites))
 
 
     # Update sprites
     all_sprites.update(dt)
+
+    collisions()
+        
 
     # Draw game
     display_surface.fill('Black')
 
     # Draw sprites in all_sprites group
     all_sprites.draw(display_surface)
+
+
+    
+
+
 
     # Update display
     pygame.display.update()
