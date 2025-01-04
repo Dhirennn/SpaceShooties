@@ -83,7 +83,8 @@ class Laser(pygame.sprite.Sprite):
 class Meteor(pygame.sprite.Sprite):
     def __init__(self, surface, position, groups):
         super().__init__(groups)
-        self.image = surface
+        self.original_image = surface
+        self.image = self.original_image
         self.rect = self.image.get_frect(center = position)
         self.speed = randint(400, 600)
         self.direction = pygame.Vector2( uniform(-0.5, 0.5) , 1)
@@ -91,10 +92,16 @@ class Meteor(pygame.sprite.Sprite):
         # Timer
         self.spawn_time = pygame.time.get_ticks()
         self.LIFETIME = 3000
+
+        self.rotation = 0
         
 
     def update(self, dt):
         self.rect.center += self.speed * self.direction * dt
+
+        # rotate meteors
+        self.rotation += 50 * dt
+        self.image = pygame.transform.rotate(self.original_image, self.rotation)
 
         # Destroy meteor sprites after 3s
         if pygame.time.get_ticks() - self.spawn_time >= self.LIFETIME:
