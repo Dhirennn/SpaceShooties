@@ -90,14 +90,18 @@ class Meteor(pygame.sprite.Sprite):
         self.image = surface
         self.rect = self.image.get_frect(center = position)
         self.speed = 400
+        
+        # Timer
+        self.spawn_time = pygame.time.get_ticks()
+        self.LIFETIME = 3000
+        
 
     def update(self, dt):
         self.rect.centery += self.speed * dt
 
-        # Kill out of bounds meteors
-        if self.rect.top >= WINDOW_HEIGHT:
+        # Destroy meteor sprites after 3s
+        if pygame.time.get_ticks() - self.spawn_time >= self.LIFETIME:
             self.kill()
-
 
 
 ################################# GENERAL SETUP #################################
@@ -154,7 +158,6 @@ while is_game_running:
             sys.exit()
 
         if event.type == meteor_event:
-
             x, y = randint(0, WINDOW_WIDTH), randint(-200, -100)
             # print(f"Spawning meteor at: x={x}, y={y}")
             Meteor(meteor_surface, (x, y), all_sprites)
