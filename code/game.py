@@ -84,6 +84,20 @@ class Laser(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 
+class Meteor(pygame.sprite.Sprite):
+    def __init__(self, surface, position, groups):
+        super().__init__(groups)
+        self.image = surface
+        self.rect = self.image.get_frect(center = position)
+        self.speed = 400
+
+    def update(self, dt):
+        self.rect.centery += self.speed * dt
+
+        # Kill out of bounds meteors
+        if self.rect.top >= WINDOW_HEIGHT:
+            self.kill()
+
 
 
 ################################# GENERAL SETUP #################################
@@ -117,9 +131,11 @@ for _ in range(20):
 # Create Player (spaceship) and attach it to the all_sprites group
 player = Player(all_sprites)
 
+# Lasers
 laser_surface = pygame.image.load(join('images','laser.png')).convert_alpha()
 
-
+# Meteors
+meteor_surface = pygame.image.load(join('images','meteor.png')).convert_alpha()
 
 # Meteor spawn event (spawns every 500ms)
 meteor_event = pygame.event.custom_type()
@@ -138,7 +154,10 @@ while is_game_running:
             sys.exit()
 
         if event.type == meteor_event:
-            print('meteor spawned')
+
+            x, y = randint(0, WINDOW_WIDTH), randint(-200, -100)
+            # print(f"Spawning meteor at: x={x}, y={y}")
+            Meteor(meteor_surface, (x, y), all_sprites)
 
 
     # Update sprites
