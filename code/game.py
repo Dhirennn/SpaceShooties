@@ -1,7 +1,7 @@
 import pygame
 import sys
 from os.path import join
-from random import randint
+from random import randint, uniform
 
 
 class Player(pygame.sprite.Sprite):
@@ -89,7 +89,8 @@ class Meteor(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = surface
         self.rect = self.image.get_frect(center = position)
-        self.speed = 400
+        self.speed = randint(400, 600)
+        self.direction = pygame.Vector2( uniform(-0.5, 0.5) , 1)
         
         # Timer
         self.spawn_time = pygame.time.get_ticks()
@@ -97,7 +98,7 @@ class Meteor(pygame.sprite.Sprite):
         
 
     def update(self, dt):
-        self.rect.centery += self.speed * dt
+        self.rect.center += self.speed * self.direction * dt
 
         # Destroy meteor sprites after 3s
         if pygame.time.get_ticks() - self.spawn_time >= self.LIFETIME:
