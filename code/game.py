@@ -32,8 +32,16 @@ class Player(pygame.sprite.Sprite):
             print('laser boom')
 
 
+class Star(pygame.sprite.Sprite):
+    def __init__(self, groups, surf):
+        super().__init__(groups)
+        self.image = surf
+
+        # Randomize locations of the Star objects
+        self.rect = self.image.get_frect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
 
 
+################################# GENERAL SETUP #################################
 
 # Initialize pygame
 pygame.init()
@@ -55,6 +63,9 @@ all_sprites = pygame.sprite.Group()
 
 # Create Player (spaceship)
 player = Player(all_sprites)
+
+
+################################# MAIN GAME LOOP #################################
 
 while is_game_running:
     dt = clock.tick() / 1000  # convert to s
