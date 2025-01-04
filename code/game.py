@@ -165,8 +165,8 @@ pygame.init()
 
 
 # Setup dimensions of window
-WINDOW_WIDTH = 1280
-WINDOW_HEIGHT = 720
+WINDOW_WIDTH = 1920
+WINDOW_HEIGHT = 1080
 
 is_game_running = True
 
