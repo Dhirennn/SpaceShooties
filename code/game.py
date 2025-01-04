@@ -15,7 +15,7 @@ class Player(pygame.sprite.Sprite):
         # Cooldown for laser-shooting
         self.can_shoot = True
         self.laser_shoot_time = 0
-        self.COOLDOWN_DURATION = 400  # 400ms between lasers
+        self.COOLDOWN_DURATION = 0  # 400ms between lasers
     
 
     def laser_timer(self):
