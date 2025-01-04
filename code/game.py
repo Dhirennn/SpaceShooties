@@ -109,12 +109,18 @@ def display_score():
 
     pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 10).move(0, -8), 1, 10)
 
+
+    # brb_surface = font.render('20-MIN BREAK, BRB! :D', True, (240, 240, 240))
+    # brb_rect = brb_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 200))
+
+    # display_surface.blit(brb_surface, brb_rect)
+
     display_surface.blit(text_surface, text_rect)
 
 def collisions():
     # global is_game_running
     # Check for collisions between player and meteor
-    if pygame.sprite.spritecollide(player, meteor_sprites, True):
+    if pygame.sprite.spritecollide(player, meteor_sprites, True, pygame.sprite.collide_mask):
         # is_game_running = False
         print('meteor collided with player')
 
