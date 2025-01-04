@@ -100,7 +100,16 @@ class Meteor(pygame.sprite.Sprite):
         if pygame.time.get_ticks() - self.spawn_time >= self.LIFETIME:
             self.kill()
 
+def display_score():
+    current_time = pygame.time.get_ticks() // 100
 
+    text_surface = font.render(str(current_time), True, (240, 240, 240))
+
+    text_rect = text_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
+
+    pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 10).move(0, -8), 1, 10)
+
+    display_surface.blit(text_surface, text_rect)
 
 def collisions():
     # global is_game_running
@@ -159,6 +168,9 @@ laser_surface = pygame.image.load(join('images','laser.png')).convert_alpha()
 # Meteors
 meteor_surface = pygame.image.load(join('images','meteor.png')).convert_alpha()
 
+# Font
+font = pygame.font.Font(join('images', 'Oxanium-Bold.ttf'), 40)
+
 # Meteor spawn event (spawns every 500ms)
 meteor_event = pygame.event.custom_type()
 pygame.time.set_timer(meteor_event, 500)
@@ -184,19 +196,18 @@ while is_game_running:
     # Update sprites
     all_sprites.update(dt)
 
+    # Check for collisions
     collisions()
         
 
     # Draw game
-    display_surface.fill('Black')
+    display_surface.fill('#3a2e3f')
 
     # Draw sprites in all_sprites group
     all_sprites.draw(display_surface)
 
 
-    
-
-
+    display_score()
 
     # Update display
     pygame.display.update()
