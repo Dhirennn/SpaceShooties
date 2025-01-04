@@ -3,280 +3,363 @@ import sys
 from os.path import join
 from random import randint, uniform
 
+###############################################################################
+#                               GLOBAL CONSTANTS                              #
+###############################################################################
+
+WINDOW_WIDTH = 1920
+WINDOW_HEIGHT = 1080
+FPS = 60  # Frames per second
+
+###############################################################################
+#                               INITIAL SETUP                                 #
+###############################################################################
+
+pygame.init()
+display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption('SpaceShooties')
+clock = pygame.time.Clock()
+
+# Load font
+font = pygame.font.Font(join('images', 'Oxanium-Bold.ttf'), 40)
+game_font = pygame.font.Font(join('images', 'Oxanium-Bold.ttf'), 80)
+
+# Load images
+player_image = pygame.image.load(join('images', 'player.png')).convert_alpha()
+star_surface = pygame.image.load(join('images', 'star.png')).convert_alpha()
+laser_surface = pygame.image.load(join('images', 'laser.png')).convert_alpha()
+meteor_surface = pygame.image.load(join('images', 'meteor.png')).convert_alpha()
+
+# Load explosion frames
+explosion_frames = [
+    pygame.image.load(join('images','explosion', f"{i}.png")).convert_alpha()
+    for i in range(21)
+]
+
+# Load sounds
+laser_sound = pygame.mixer.Sound(join('audio','laser.wav'))
+laser_sound.set_volume(0.5)
+explosion_sound = pygame.mixer.Sound(join('audio','explosion.wav'))
+explosion_sound.set_volume(0.5)
+game_music = pygame.mixer.Sound(join('audio', 'game_music.wav'))
+game_music.set_volume(0.4)
+game_over_music = pygame.mixer.Sound(join('audio', 'No_Hope.wav'))
+game_over_music.set_volume(0.8)
+
+# Custom event for meteor spawn
+METEOR_EVENT = pygame.event.custom_type()
+pygame.time.set_timer(METEOR_EVENT, 500)
+
+
+###############################################################################
+#                                SPRITE CLASSES                               #
+###############################################################################
 
 class Player(pygame.sprite.Sprite):
+    """The player-controlled spaceship."""
+
     def __init__(self, groups):
         super().__init__(groups)
-        self.image = pygame.image.load(join('images', 'player.png')).convert_alpha()
-        self.rect = self.image.get_frect(center=(WINDOW_WIDTH/2, WINDOW_HEIGHT/2))
-        self.direction = pygame.Vector2()  # create (0,0) vector
+        self.image = pygame.transform.scale_by(player_image, 1.2)
+        self.rect = self.image.get_frect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
+        self.direction = pygame.Vector2()
         self.speed = 500
 
-        # Cooldown for laser-shooting
+        # Laser cooldown
         self.can_shoot = True
         self.laser_shoot_time = 0
-        self.COOLDOWN_DURATION = 0  # 400ms between lasers
-    
+        self.COOLDOWN_DURATION = 400
 
     def laser_timer(self):
-
-        # If the laser is already pressed, we start the cooldown timer
+        """Check and update laser cooldown."""
         if not self.can_shoot:
-            # amount of time since the start of game
             current_time = pygame.time.get_ticks()
-
             if current_time - self.laser_shoot_time >= self.COOLDOWN_DURATION:
                 self.can_shoot = True
 
-
     def update(self, dt):
-        # print('hi')
+        """Update the player's movement and handle laser firing."""
         keys = pygame.key.get_pressed()
-
-        # Update x and y values of player's direction vector
-        # based on right/left arrows
         self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
         self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
+        self.direction = self.direction.normalize() if self.direction.length() != 0 else self.direction
 
-        # Normalize to maintain constant speed diagonally
-        self.direction = self.direction.normalize() if self.direction else self.direction
-
+        # Move player
         self.rect.center += self.direction * self.speed * dt
 
+        # Check for laser firing
         recent_keys = pygame.key.get_just_pressed()
         if recent_keys[pygame.K_SPACE] and self.can_shoot:
-            
-            # Create Laser sprite
             Laser(laser_surface, self.rect.midtop, (all_sprites, laser_sprites))
             laser_sound.play()
-
-
             self.can_shoot = False
-
-            # Capture time that the player pressed space (shoot laser)
             self.laser_shoot_time = pygame.time.get_ticks()
 
-        # Run the cooldown timer
         self.laser_timer()
 
 class Star(pygame.sprite.Sprite):
+    """Background stars that continuously move downward."""
+
     def __init__(self, groups, surf):
         super().__init__(groups)
         self.image = surf
         self.speed = 300
-
-        # Randomize locations of the Star objects
-        self.rect = self.image.get_frect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
+        self.rect = self.image.get_frect(
+            center=(randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT))
+        )
 
     def update(self, dt):
+        """Move the star downward and wrap back to top."""
         self.rect.centery += self.speed * dt
-
         if self.rect.top >= WINDOW_HEIGHT:
-            self.rect.top = randint(0, WINDOW_WIDTH)
-            self.rect.centery = 0
-
+            self.rect.top = 0
+            self.rect.centerx = randint(0, WINDOW_WIDTH)
 
 class Laser(pygame.sprite.Sprite):
+    """Player-fired laser that moves upward."""
+
     def __init__(self, surface, position, groups):
         super().__init__(groups)
         self.image = surface
-        self.rect = self.image.get_frect(midbottom = position)
-
+        self.rect = self.image.get_frect(midbottom=position)
 
     def update(self, dt):
+        """Move laser upward and remove it if it goes off-screen."""
         self.rect.centery -= 400 * dt
-
-        # Remove lasers that are out of screen for efficiency
         if self.rect.bottom < 0:
             self.kill()
 
 class Meteor(pygame.sprite.Sprite):
+    """Randomly spawned meteors that move downward at an angle."""
+
     def __init__(self, surface, position, groups):
         super().__init__(groups)
         self.original_image = surface
         self.image = self.original_image
-        self.rect = self.image.get_frect(center = position)
+        self.rect = self.image.get_frect(center=position)
         self.speed = randint(400, 600)
-        self.direction = pygame.Vector2( uniform(-0.5, 0.5) , 1)
-        
-        # Timer
-        self.spawn_time = pygame.time.get_ticks()
-        self.LIFETIME = 3000
+        self.direction = pygame.Vector2(uniform(-0.5, 0.5), 1)
 
+        # Rotation
         self.rotation = 0
         self.rotation_speed = randint(40, 80)
-        
+
+        # Lifetime (meteor is destroyed automatically after 3s)
+        self.spawn_time = pygame.time.get_ticks()
+        self.LIFETIME = 3000  # ms
 
     def update(self, dt):
+        """Move and rotate the meteor, and remove it after lifetime."""
         self.rect.center += self.speed * self.direction * dt
 
-        # rotate meteors
+        # Rotate meteors
         self.rotation += self.rotation_speed * dt
         self.image = pygame.transform.rotate(self.original_image, self.rotation)
-        self.rect = self.image.get_frect(center = self.rect.center)
+        self.rect = self.image.get_frect(center=self.rect.center)
 
-        # Destroy meteor sprites after 3s
+        # Remove meteor after lifetime
         if pygame.time.get_ticks() - self.spawn_time >= self.LIFETIME:
             self.kill()
 
 class AnimatedExplosion(pygame.sprite.Sprite):
+    """Animated explosion that plays frames and destroys itself after finishing."""
+
     def __init__(self, frames, pos, groups):
         super().__init__(groups)
         self.frames = frames
         self.frame_index = 0
         self.image = self.frames[self.frame_index]
-        self.rect = self.image.get_frect(center = pos)
+        self.rect = self.image.get_frect(center=pos)
 
     def update(self, dt):
+        """Animate the explosion by cycling through frames."""
         self.frame_index += 30 * dt
-
         if int(self.frame_index) < len(self.frames):
-            self.image = self.frames[int(self.frame_index) % len(self.frames)]
+            self.image = self.frames[int(self.frame_index)]
         else:
             self.kill()
 
 
-def display_score():
-    current_time = pygame.time.get_ticks() // 100
+###############################################################################
+#                            GAME LOGIC FUNCTIONS                             #
+###############################################################################
 
+def display_score(score):
+    """Display the current score in the bottom center of the screen."""
     text_surface = font.render(f"Score: {score}", True, (240, 240, 240))
+    text_rect = text_surface.get_frect(midbottom=(WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
 
-    text_rect = text_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
-
-    pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 10).move(0, -8), 1, 10)
-
-
-    # brb_surface = font.render('20-MIN BREAK, BRB! :D', True, (240, 240, 240))
-    # brb_rect = brb_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 200))
-
-    # display_surface.blit(brb_surface, brb_rect)
+    # Draw a semi-transparent rect behind the text
+    pygame.draw.rect(display_surface, (240, 240, 240),
+                     text_rect.inflate(20, 10).move(0, -8), width=1, border_radius=10)
 
     display_surface.blit(text_surface, text_rect)
 
-def collisions():
-    global score
-    # global is_game_running
-    # Check for collisions between player and meteor
-    if pygame.sprite.spritecollide(player, meteor_sprites, True, pygame.sprite.collide_mask):
-        # is_game_running = False
-        print('meteor collided with player')
+def collisions(player, meteor_sprites, laser_sprites, explosion_frames):
+    """
+    Handle collisions between:
+    - Player and Meteors
+    - Lasers and Meteors
 
+    Returns:
+        hit_player (bool): True if the player is hit by a meteor, otherwise False.
+        score_increase (int): The score increment from meteor-laser collisions.
+    """
+    # Player - Meteor collision
+    hit_player = pygame.sprite.spritecollide(
+        player, meteor_sprites, True, pygame.sprite.collide_mask
+    )
+    player_hit = len(hit_player) > 0  # True if any meteor collided
 
-    # Check for collisions between laser sprites and meteors
+    # Laser - Meteor collision
+    score_increase = 0
     for laser in laser_sprites:
-        if (pygame.sprite.spritecollide(laser, meteor_sprites, dokill=True)):
+        hit_meteors = pygame.sprite.spritecollide(
+            laser, meteor_sprites, dokill=True
+        )
+        if hit_meteors:
             laser.kill()
+            # Explosion at laser's position
             AnimatedExplosion(explosion_frames, laser.rect.midtop, all_sprites)
             explosion_sound.play()
-            score += 10
+            # Increase score for each meteor destroyed
+            score_increase += 10 * len(hit_meteors)
+
+    return player_hit, score_increase
 
 
-################################# GENERAL SETUP #################################
+def show_game_over_screen():
+    """
+    Display a 'Game Over' screen with options to restart or quit.
+    Allows the player to press 'R' to restart or 'Q' to quit.
+    """
+    # Stop the game music
+    game_music.stop()
 
-# Initialize pygame
-pygame.init()
+    # Play the game over music
+    game_over_music.play(loops=-1)
 
+    # Simple "Game Over" loop
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # Restart the game
+                    return  # Exit this function to restart the game loop
+                if event.key == pygame.K_q:  # Quit the game
+                    pygame.quit()
+                    sys.exit()
 
-# Setup dimensions of window
-WINDOW_WIDTH = 1920
-WINDOW_HEIGHT = 1080
+        # Fill background
+        display_surface.fill('#1a1a1a')
 
-is_game_running = True
+        # Game Over text
+        game_over_surface = font.render("GAME OVER", True, (240, 50, 50))
+        game_over_rect = game_over_surface.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 100))
+        display_surface.blit(game_over_surface, game_over_rect)
 
-score = 0
+        # Restart instructions
+        restart_surface = font.render("Press R to Restart", True, (240, 240, 240))
+        restart_rect = restart_surface.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
+        display_surface.blit(restart_surface, restart_rect)
 
-display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        # Quit instructions
+        quit_surface = font.render("Press Q to Quit", True, (240, 240, 240))
+        quit_rect = quit_surface.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100))
+        display_surface.blit(quit_surface, quit_rect)
 
-pygame.display.set_caption('SpaceShooties')
-
-clock = pygame.time.Clock()
-
-# Create group to hold all sprites
-all_sprites = pygame.sprite.Group()
-
-# Meteor sprite group
-meteor_sprites = pygame.sprite.Group()
-
-# Laser sprites
-laser_sprites = pygame.sprite.Group()
-
-# Add Stars randomly to display_surface
-star_surface = pygame.image.load(join('images','star.png')).convert_alpha()
-
-# Add 20 stars with random coordinates to the display_surface
-for _ in range(20):
-    Star(all_sprites, star_surface)
-
-# Create Player (spaceship) and attach it to the all_sprites group
-player = Player(all_sprites)
-
-# Lasers
-laser_surface = pygame.image.load(join('images','laser.png')).convert_alpha()
-laser_sound = pygame.mixer.Sound(join('audio','laser.wav'))
-laser_sound.set_volume(0.5)
-explosion_sound = pygame.mixer.Sound(join('audio','explosion.wav'))
-explosion_sound.set_volume(0.5)
-# damage_sound = pygame.mixer.Sound(join('audio','damage.ogg'))
-# damage_sound.set_volume(0.5)
-game_music = pygame.mixer.Sound(join('audio', 'game_music.wav'))
-game_music.set_volume(0.4)
-
-# Meteors
-meteor_surface = pygame.image.load(join('images','meteor.png')).convert_alpha()
-
-# Explosion animation
-explosion_frames = [pygame.image.load(join('images','explosion', f"{i}.png")).convert_alpha() for i in range(21)]
-print(explosion_frames)
-
-# Font
-font = pygame.font.Font(join('images', 'Oxanium-Bold.ttf'), 40)
-
-# Meteor spawn event (spawns every 500ms)
-meteor_event = pygame.event.custom_type()
-pygame.time.set_timer(meteor_event, 500)
+        pygame.display.update()
+        clock.tick(FPS)
 
 
 
-################################# MAIN GAME LOOP #################################
+def run_game():
+    """
+    Main function to run the game loop.
+    - Initializes groups and sprites.
+    - Runs the main loop for gameplay until player is hit.
+    - Shows a game over screen afterward with options to restart or quit.
+    """
+    while True:  # Loop to allow restarting the game
+        game_over_music.stop()
+        # Initialize music
+        game_music.play(loops=-1)
 
-game_music.play(loops=-1)
+        # Create sprite groups
+        global all_sprites, meteor_sprites, laser_sprites
+        all_sprites = pygame.sprite.Group()
+        meteor_sprites = pygame.sprite.Group()
+        laser_sprites = pygame.sprite.Group()
 
-while is_game_running:
-    dt = clock.tick() / 1000  # convert to s
+        # Create Player
+        player = Player(all_sprites)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            sys.exit()
+        # Create initial stars
+        for _ in range(20):
+            Star(all_sprites, star_surface)
 
-        if event.type == meteor_event:
-            x, y = randint(0, WINDOW_WIDTH), randint(-200, -100)
-            # print(f"Spawning meteor at: x={x}, y={y}")
-            Meteor(meteor_surface, (x, y), (all_sprites, meteor_sprites))
+        # Reset score and running state
+        score = 0
+        is_game_running = True
+
+        # Main game loop
+        while is_game_running:
+            dt = clock.tick(FPS) / 1000  # Delta time in seconds
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == METEOR_EVENT:
+                    x, y = randint(0, WINDOW_WIDTH), randint(-200, -100)
+                    Meteor(meteor_surface, (x, y), (all_sprites, meteor_sprites))
+
+            # Update sprites
+            all_sprites.update(dt)
+
+            # Check collisions
+            player_hit, score_increase = collisions(
+                player, meteor_sprites, laser_sprites, explosion_frames
+            )
+            if player_hit:
+                # Player is hit -> stop game
+                is_game_running = False
+            score += score_increase
+
+            # Draw everything
+            display_surface.fill('#3a2e3f')
+            all_sprites.draw(display_surface)
+
+            # Display the score
+            display_score(score)
+
+            # Display game name
+            game_name_surface = game_font.render("SpaceShooties", True, (240, 240, 240))
+            game_name_rect = game_name_surface.get_rect(midtop=(WINDOW_WIDTH / 2, 10))
+            display_surface.blit(game_name_surface, game_name_rect)
+
+            pygame.display.update()
+
+        # If we exit the while loop, it means the player got hit -> game over
+        show_game_over_screen()
 
 
-    # Update sprites
-    all_sprites.update(dt)
 
-    # Check for collisions
-    collisions()
-        
+###############################################################################
+#                                   RUN GAME                                  #
+###############################################################################
 
-    # Draw game
-    display_surface.fill('#3a2e3f')
+if __name__ == "__main__":
+    # These two variables are declared here to align with your original code.
+    # They get updated in run_game() and collisions().
+    score = 0
+    is_game_running = True
 
-    # Draw sprites in all_sprites group
-    all_sprites.draw(display_surface)
+    run_game()
 
-
-    display_score()
-
-    # Update display
-    pygame.display.update()
-
-
-pygame.quit()
-
-
-
-
+    # Once the user closes the Game Over screen, we exit.
+    pygame.quit()
+    sys.exit()
