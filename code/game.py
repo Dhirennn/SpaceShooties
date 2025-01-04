@@ -80,6 +80,10 @@ class Laser(pygame.sprite.Sprite):
     def update(self, dt):
         self.rect.centery -= 400 * dt
 
+        # Remove lasers that are out of screen for efficiency
+        if self.rect.bottom < 0:
+            self.kill()
+
 
 
 ################################# GENERAL SETUP #################################
