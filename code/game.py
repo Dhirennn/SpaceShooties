@@ -48,6 +48,7 @@ class Player(pygame.sprite.Sprite):
             
             # Create Laser sprite
             Laser(laser_surface, self.rect.midtop, (all_sprites, laser_sprites))
+            laser_sound.play()
 
 
             self.can_shoot = False
@@ -156,6 +157,7 @@ def collisions():
         if (pygame.sprite.spritecollide(laser, meteor_sprites, dokill=True)):
             laser.kill()
             AnimatedExplosion(explosion_frames, laser.rect.midtop, all_sprites)
+            explosion_sound.play()
 
 
 ################################# GENERAL SETUP #################################
@@ -189,7 +191,7 @@ laser_sprites = pygame.sprite.Group()
 star_surface = pygame.image.load(join('images','star.png')).convert_alpha()
 
 # Add 20 stars with random coordinates to the display_surface
-for _ in range(20):
+for _ in range(30):
     Star(all_sprites, star_surface)
 
 # Create Player (spaceship) and attach it to the all_sprites group
@@ -197,6 +199,14 @@ player = Player(all_sprites)
 
 # Lasers
 laser_surface = pygame.image.load(join('images','laser.png')).convert_alpha()
+laser_sound = pygame.mixer.Sound(join('audio','laser.wav'))
+laser_sound.set_volume(0.5)
+explosion_sound = pygame.mixer.Sound(join('audio','explosion.wav'))
+explosion_sound.set_volume(0.5)
+# damage_sound = pygame.mixer.Sound(join('audio','damage.ogg'))
+# damage_sound.set_volume(0.5)
+game_music = pygame.mixer.Sound(join('audio', 'game_music.wav'))
+game_music.set_volume(0.4)
 
 # Meteors
 meteor_surface = pygame.image.load(join('images','meteor.png')).convert_alpha()
@@ -215,6 +225,8 @@ pygame.time.set_timer(meteor_event, 500)
 
 
 ################################# MAIN GAME LOOP #################################
+
+game_music.play(loops=-1)
 
 while is_game_running:
     dt = clock.tick() / 1000  # convert to s
