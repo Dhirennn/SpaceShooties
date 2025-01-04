@@ -139,7 +139,7 @@ class AnimatedExplosion(pygame.sprite.Sprite):
 def display_score():
     current_time = pygame.time.get_ticks() // 100
 
-    text_surface = font.render(str(current_time), True, (240, 240, 240))
+    text_surface = font.render(f"Score: {score}", True, (240, 240, 240))
 
     text_rect = text_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
 
@@ -154,6 +154,7 @@ def display_score():
     display_surface.blit(text_surface, text_rect)
 
 def collisions():
+    global score
     # global is_game_running
     # Check for collisions between player and meteor
     if pygame.sprite.spritecollide(player, meteor_sprites, True, pygame.sprite.collide_mask):
@@ -167,6 +168,7 @@ def collisions():
             laser.kill()
             AnimatedExplosion(explosion_frames, laser.rect.midtop, all_sprites)
             explosion_sound.play()
+            score += 10
 
 
 ################################# GENERAL SETUP #################################
@@ -180,6 +182,8 @@ WINDOW_WIDTH = 1920
 WINDOW_HEIGHT = 1080
 
 is_game_running = True
+
+score = 0
 
 display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
