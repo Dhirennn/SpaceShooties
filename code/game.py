@@ -63,9 +63,18 @@ class Star(pygame.sprite.Sprite):
     def __init__(self, groups, surf):
         super().__init__(groups)
         self.image = surf
+        self.speed = 300
 
         # Randomize locations of the Star objects
         self.rect = self.image.get_frect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
+
+    def update(self, dt):
+        self.rect.centery += self.speed * dt
+
+        if self.rect.top >= WINDOW_HEIGHT:
+            self.rect.top = randint(0, WINDOW_WIDTH)
+            self.rect.centery = 0
+
 
 class Laser(pygame.sprite.Sprite):
     def __init__(self, surface, position, groups):
@@ -191,7 +200,7 @@ laser_sprites = pygame.sprite.Group()
 star_surface = pygame.image.load(join('images','star.png')).convert_alpha()
 
 # Add 20 stars with random coordinates to the display_surface
-for _ in range(30):
+for _ in range(20):
     Star(all_sprites, star_surface)
 
 # Create Player (spaceship) and attach it to the all_sprites group
